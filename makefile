@@ -1,10 +1,29 @@
-C=gcc
-CFLAGS=-Wall -Werror
-LIBS=-lssl -lcrypto
+CC=gcc
+CFLAGS=-Wall -Wextra -pthread -I.
 
-server: main.c
-	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+multi_server: multi_server.o message.o
+	$(CC) $(CFLAGS) -o $@ $^
+
+client: client.o message.o
+	$(CC) $(CFLAGS) -o $@ $^
+
+main: main.o
+	$(CC) $(CFLAGS) -lcrypto -o $@ $^
+
+multi_server.o: multi_server.c message.h
+	$(CC) $(CFLAGS) -c $<
+
+client.o: client.c message.h
+	$(CC) $(CFLAGS) -c $<
+
+message.o: message.c message.h
+	$(CC) $(CFLAGS) -c $<
+
+main.o: main.c
+	$(CC) $(CFLAGS) -c $<
+
+.PHONY: clean
 
 clean:
-	rm -f *.o server
+	rm -f multi_server client main *.o
 
