@@ -7,19 +7,20 @@
 #include "message.h"
 
 #define PORT 8080
-#define MAXSCRIPT (1024 * 1024)
+#define MAXSCRIPTSIZE (1024 * 1024)
+#define BUFFERSIZE 1024
 
 int main(int argc, char const *argv[]) 
 {
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
-    char buffer[1024] = {0};
-    char script[MAXSCRIPT] = {0};
+    char buffer[BUFFERSIZE] = {0};
+    char script[MAXSCRIPTSIZE] = {0};
 
     if (argc != 2) 
     {
         printf("Usage: %s <script_path>\n", argv[0]);
-        return 1;
+        return -1;
     }
 
     // Open the Bash script file
@@ -27,7 +28,7 @@ int main(int argc, char const *argv[])
     if (fp == NULL) 
     {
         perror("fopen failed");
-        return 1;
+        return -2;
     }
 
     fseek(fp, 0, SEEK_END);
@@ -41,7 +42,7 @@ int main(int argc, char const *argv[])
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     {
         perror("socket creation failed");
-        return 1;
+        return -3;
     }
 
     memset(&serv_addr, '0', sizeof(serv_addr));
@@ -52,20 +53,20 @@ int main(int argc, char const *argv[])
     if (inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) 
     {
         perror("invalid address");
-        return 1;
+        return -4;
     }
 
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) 
     {
         perror("connection failed");
-        return 1;
+        return -5;
     }
 
     // Send the Bash script to the server
     if (send_data(sock, script, fsize, 1) < 0) 
     {
         perror("send failed");
-        return 1;
+        return -6;
     }
 
 
@@ -77,7 +78,6 @@ int main(int argc, char const *argv[])
         memset(buffer, 0, sizeof(buffer));
     }
 
-    // Close the file and the socket
     close(sock);
 
     return 0;

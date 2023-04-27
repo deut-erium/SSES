@@ -5,6 +5,10 @@
 #include <sys/socket.h>
 #include <string.h>
 
+#define ERR_SEND_DATA_SEND -1
+#define ERR_RECV_MSG_RECV  -2
+
+
 struct message {
     char data[1022];
     short size;

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <dirent.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>
 #include <openssl/bio.h>
@@ -29,7 +30,6 @@ void print_public_modulus(EVP_PKEY * pkey)
     RSA_print_fp(stdout, rsa, 0);
 
     RSA_free(rsa);
-
 }
 
 
@@ -43,7 +43,7 @@ int extract_public_key_from_crt(const char *crt_path, EVP_PKEY ** public_key)
     if (!BIO_read_filename(bio, crt_path))
     {
         fprintf(stderr, "Error reading certificate file\n");
-        error = 1;
+        error = ERR_EXTRACT_PUBKEY_READ;
         goto cleanup;
     }
 
@@ -51,8 +51,8 @@ int extract_public_key_from_crt(const char *crt_path, EVP_PKEY ** public_key)
     x509 = PEM_read_bio_X509(bio, NULL, NULL, NULL);
     if (!x509)
     {
-        fprintf(stderr, "Error parsing certificate\n");
-        error = 2;
+        fprintf(stderr, "Error parsing certificate: %s\n", crt_path);
+        error = ERR_EXTRACT_PUBKEY_PARSE;
         goto cleanup;
     }
 
@@ -61,7 +61,7 @@ int extract_public_key_from_crt(const char *crt_path, EVP_PKEY ** public_key)
     if (!*public_key)
     {
         fprintf(stderr, "Error extracting public key from certificate\n");
-        error = 3;
+        error = ERR_EXTRACT_PUBKEY_PUBLICKEY;
         goto cleanup;
     }
   cleanup:
@@ -77,7 +77,7 @@ int decode_signature(char *signature_base64,
                      size_t base64_len,
                      unsigned char **decoded_signature, size_t *signature_len)
 {
-    int ret = -1;
+    int ret = ERR_DECODE_SIGN_FAILURE;
     BIO *b64 = NULL;
     BIO *mem = NULL;
     size_t len;
@@ -86,6 +86,7 @@ int decode_signature(char *signature_base64,
     if (!b64)
     {
         fprintf(stderr, "Error: failed to create BIO\n");
+        ret = ERR_DECODE_SIGN_BIO_NEW;
         goto out;
     }
 
@@ -94,6 +95,7 @@ int decode_signature(char *signature_base64,
     {
         fprintf(stderr, "Error: failed to create memory buffer BIO\n");
         BIO_free_all(b64);
+        ret = ERR_DECODE_SIGN_BIO_NEW;
         goto out;
     }
 
@@ -105,6 +107,7 @@ int decode_signature(char *signature_base64,
     if (len == 0)
     {
         fprintf(stderr, "Error: failed to base64 decode signature\n");
+        ret = ERR_DECODE_SIGN_FAILURE;
         goto out_free_mem;
     }
 
@@ -133,20 +136,20 @@ int verify_signature(unsigned char *signature_buffer,
     if (mdctx == NULL)
     {
         fprintf(stderr, "Error creating EVP_MD_CTX\n");
-        return 1;               // Error: Could not create EVP_MD_CTX
+        return ERR_VERIFY_SIGN_CTX_CREATE;
     }
 
     if (EVP_VerifyInit(mdctx, md) != 1)
     {
         fprintf(stderr, "Error initializing EVP_VerifyInit\n");
-        status = 2;             // Error: Could not initialize EVP_VerifyInit
+        status = ERR_VERIFY_SIGN_INIT_VERIFY;
         goto cleanup;
     }
 
     if (EVP_VerifyUpdate(mdctx, file_content_buffer, file_buffer_length) != 1)
     {
         fprintf(stderr, "Error updating EVP_VerifyUpdate\n");
-        status = 3;             // Error: Could not update EVP_VerifyUpdate
+        status = ERR_VERIFY_SIGN_VERIFY_UPDATE;
         goto cleanup;
     }
 
@@ -155,8 +158,8 @@ int verify_signature(unsigned char *signature_buffer,
 
     if (verify_result != 1)
     {
-        fprintf(stderr, "Error verifying signature\n");
-        status = 4;             // Error: Could not verify signature
+        /* fprintf(stderr, "Error verifying signature\n"); */
+        status = ERR_VERIFY_SIGN_FAILURE;
         goto cleanup;
     }
 
@@ -169,33 +172,40 @@ int verify_signature(unsigned char *signature_buffer,
 }
 
 int extract_signature_from_file(const char *filename,
-                      unsigned char *signature_buffer,
-                      unsigned char *file_content_buffer,
-                      size_t *signature_len, size_t *file_content_len)
+                                unsigned char *signature_buffer,
+                                unsigned char *file_content_buffer,
+                                size_t *signature_len,
+                                size_t *file_content_len)
 {
     FILE *fp = fopen(filename, "r");
     if (fp == NULL)
     {
-        return 1;              // Error: unable to open file
+        return ERR_EXTRACT_SIGN_FILE_FOPEN;
     }
     char line[MAX_SIGNATURE_LEN + 1];
     if (fgets(line, sizeof(line), fp) == NULL)
     {
         fclose(fp);
-        return 2;              // Error: unable to read file
+        return ERR_EXTRACT_SIGN_FILE_READ;
     }
 
     if (line[0] != '#')
     {
         fclose(fp);
-        return 3;              // Error: invalid file format
+        /* file format 
+         * #<base64encoded signature> 
+         * #!/bin/bash
+         * <SCRIPT CONTENT> 
+         * <SCRIPT CONTENT> */
+        return ERR_EXTRACT_SIGN_FILE_MISSING_COMMENT;
     }
 
     size_t line_len = strlen(line);
     if (line_len <= 1)
     {
         fclose(fp);
-        return 4;              // Error: signature not found
+        return ERR_EXTRACT_SIGN_FILE_MISSING_SIGNATURE; // Error: signature
+                                                        // not found
     }
     line[line_len - 1] = '\0';  // Remove the newline character at the end
     char *signature_base64 = line + 1;  // Skip the '#' symbol
@@ -210,7 +220,7 @@ int extract_signature_from_file(const char *filename,
     {
         free(decoded_signature);
         fclose(fp);
-        return 5;              // Error: unable to decode signature
+        return ERR_EXTRACT_SIGN_FILE_B64DECODE_FAIL;
     }
 
     memcpy(signature_buffer, decoded_signature, decoded_len);
@@ -219,13 +229,12 @@ int extract_signature_from_file(const char *filename,
     size_t content_len = 0;
     while (!feof(fp) && content_len < MAX_FILE_LEN)
     {
-        size_t read_len =
-            fread(file_content_buffer + content_len, 1,
-                  MAX_FILE_LEN - content_len, fp);
+        size_t read_len = fread(file_content_buffer + content_len, 1,
+                                MAX_FILE_LEN - content_len, fp);
         if (read_len == 0 && ferror(fp))
         {
             fclose(fp);
-            return 6;          // Error: unable to read file
+            return ERR_EXTRACT_SIGN_FILE_CONTENT_FAIL;
         }
         content_len += read_len;
     }
@@ -237,30 +246,36 @@ int extract_signature_from_file(const char *filename,
     return 0;                   // Success
 }
 
-int extract_signature_inplace(char * buffer,
-                      char **signature_buffer,
-                      char **file_content_buffer,
-                      size_t *signature_len, size_t *file_content_len)
+int extract_signature_inplace(char *buffer,
+                              char **signature_buffer,
+                              char **file_content_buffer,
+                              size_t *signature_len, size_t *file_content_len)
 {
+    /* file format 
+     * #<base64encoded signature> 
+     * #!/bin/bash 
+     * <SCRIPT CONTENT>
+     * <SCRIPT CONTENT> */
     if (buffer[0] != '#')
     {
-        return 3;              // Error: invalid file format
+        return ERR_EXTRACT_SIGN_INPLACE_MISSING_COMMENT;
     }
-    char * newline_pos = strchr(buffer, '\n');
+    char *newline_pos = strchr(buffer, '\n');
     *signature_buffer = buffer + 1;
     *file_content_buffer = newline_pos + 1;
     *newline_pos = '\0';
-    
+
     size_t signature_base64_len = strlen(*signature_buffer);
 
     size_t decoded_len;
-    unsigned char *decoded_signature = malloc((signature_base64_len * 3) / 4 + 1);
+    unsigned char *decoded_signature =
+        malloc((signature_base64_len * 3) / 4 + 1);
     if (decode_signature
         (*signature_buffer, signature_base64_len, &decoded_signature,
          &decoded_len) != 0)
     {
         free(decoded_signature);
-        return 5;              // Error: unable to decode signature
+        return ERR_EXTRACT_SIGN_INPLACE_B64DECODE_FAIL;
     }
 
     memcpy(*signature_buffer, decoded_signature, decoded_len);
@@ -272,3 +287,131 @@ int extract_signature_inplace(char * buffer,
     return 0;                   // Success
 }
 
+int is_directory(const char *path)
+{
+    DIR *dir = opendir(path);
+    if (dir)
+    {
+        closedir(dir);
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+
+int get_pubkey_list(const char *directory, pubkey_list_t ** list,
+                    int *list_len)
+{
+    DIR *dir;
+    struct dirent *ent;
+    pubkey_list_t *files;
+    int count = 0;
+    int i;
+
+    dir = opendir(directory);
+    if (dir == NULL)
+    {
+        return ERR_GET_PUBKEY_LIST_OPENDIR;
+    }
+
+    while ((ent = readdir(dir)) != NULL)
+    {
+        if (ent->d_type == DT_REG)
+        {
+            count++;
+        }
+    }
+
+    files = (pubkey_list_t *) malloc(count * sizeof(pubkey_list_t));
+    if (files == NULL)
+    {
+        return ERR_GET_PUBKEY_LIST_MALLOC;
+    }
+
+    rewinddir(dir);
+
+    i = 0;
+    while ((ent = readdir(dir)) != NULL)
+    {
+        if (ent->d_type == DT_REG)
+        {
+            files[i].name = (char *)malloc(strlen(ent->d_name) + 1);
+            if (files[i].name == NULL)
+            {
+                return ERR_GET_PUBKEY_LIST_MALLOC;  // error allocating memory
+            }
+            strcpy(files[i].name, ent->d_name);
+            char *file_path =
+                (char *)malloc(strlen(directory) + strlen(ent->d_name) + 2);
+            if (file_path == NULL)
+            {
+                return ERR_GET_PUBKEY_LIST_MALLOC;  // error allocating memory
+            }
+            sprintf(file_path, "%s/%s", directory, ent->d_name);
+            if (extract_public_key_from_crt(file_path, &files[i].pubkey) >= 0)
+            {
+                i++;
+            }
+            free(file_path);
+        }
+    }
+    // realloc non crt files
+    files = realloc(files, i * sizeof(pubkey_list_t));
+
+    *list = files;
+    *list_len = i;
+
+    closedir(dir);
+
+    return 0;                   // success
+}
+
+void free_pubkey_list(pubkey_list_t * list, int list_len)
+{
+    int i;
+
+    for (i = 0; i < list_len; i++)
+    {
+        free(list[i].name);
+        EVP_PKEY_free(list[i].pubkey);
+    }
+    free(list);
+}
+
+
+int get_pubkeys(const char *path, pubkey_list_t ** pubkeys, int *num_pubkeys)
+{
+    if (is_directory(path))
+    {
+        if (get_pubkey_list(path, pubkeys, num_pubkeys) != 0)
+        {
+            printf("Error getting file list\n");
+            return ERR_GET_PUBKEYS_PATH_DIR_FAIL;
+        }
+    }
+    else
+    {
+        *pubkeys = (pubkey_list_t *) malloc(sizeof(pubkey_list_t));
+        if (extract_public_key_from_crt(path, &(*pubkeys)[0].pubkey) >= 0)
+        {
+            *num_pubkeys = 1;
+            (*pubkeys)[0].name = (char *)malloc(strlen(path) + 1);
+            strcpy((*pubkeys)[0].name, path);
+        }
+    }
+
+    if (*num_pubkeys == 0)
+    {
+        fprintf(stderr, "no valid pubkeys found\n");
+        return ERR_GET_PUBKEYS_PATH_NO_PUBKEYS;
+    }
+
+    for (int i = 0; i < *num_pubkeys; i++)
+    {
+        printf("Loaded certificate %s\n", (*pubkeys)[i].name);
+    }
+    return 0;
+}

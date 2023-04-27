@@ -15,7 +15,7 @@ int send_data(int sockfd, const char * data, size_t datalen, int include_termina
         ssize_t sent = send(sockfd, &msg, sizeof(struct message), 0);
         if (sent == -1) 
         {
-            return -1;  // error occurred
+            return ERR_SEND_DATA_SEND;  // error occurred
         }
         total_sent += chunk_size;
     }
@@ -25,7 +25,7 @@ int send_data(int sockfd, const char * data, size_t datalen, int include_termina
         ssize_t sent = send(sockfd, &msg, sizeof(struct message), 0);
         if (sent == -1) 
         {
-            return -1;  // error occurred
+            return ERR_SEND_DATA_SEND;  // error occurred
         }
     }
     return 0;  // success
@@ -38,7 +38,7 @@ int recv_msg(int sockfd, char * buffer)
     ssize_t recieved = recv(sockfd, &msg, sizeof(struct message),0);
     if (recieved == -1)
     {
-        return -1;
+        return ERR_RECV_MSG_RECV;
     }
     if (recieved == 0)
     {
