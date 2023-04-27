@@ -1,37 +1,40 @@
-CC=gcc
-CFLAGS=-I.
-LIBS=-lpthread -lcrypto
+CC = gcc
+CFLAGS = -Wall -Wextra -pedantic
+SRCDIR = src
+OBJDIR = build
+EXECDIR = bin
+LDFLAGS = -lcrypto
 
-multi_server: multi_server.o message.o
-	$(CC) -o multi_server multi_server.o message.o $(LIBS)
+CLIENT_SOURCES = $(SRCDIR)/client.c $(SRCDIR)/message.c
+SERVER_SOURCES = $(SRCDIR)/server.c $(SRCDIR)/message.c $(SRCDIR)/signature_utils.c
+UTILS_SOURCES = $(SRCDIR)/signature_utils.c
 
-multi_server.o: multi_server.c message.h
-	$(CC) -c multi_server.c $(CFLAGS)
+CLIENT_OBJECTS = $(CLIENT_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+SERVER_OBJECTS = $(SERVER_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+UTILS_OBJECTS = $(UTILS_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 
-message.o: message.c message.h
-	$(CC) -c message.c $(CFLAGS)
+CLIENT_EXECUTABLE = $(EXECDIR)/client
+SERVER_EXECUTABLE = $(EXECDIR)/server
 
-client: client.o message.o
-	$(CC) -o client client.o message.o $(LIBS)
+.PHONY: all clean
 
-client.o: client.c message.h
-	$(CC) -c client.c $(CFLAGS)
+all: $(CLIENT_EXECUTABLE) $(SERVER_EXECUTABLE)
 
-main: main.o
-	$(CC) -o main main.o $(LIBS)
+$(CLIENT_EXECUTABLE): $(CLIENT_OBJECTS) | $(EXECDIR)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
-main.o: main.c
-	$(CC) -c main.c $(CFLAGS)
+$(SERVER_EXECUTABLE): $(SERVER_OBJECTS) $(UTILS_OBJECTS) | $(EXECDIR)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -pthread
 
-main_server: main_server.o message.o signature_utils.o
-	$(CC) -o main_server main_server.o message.o signature_utils.o $(LIBS)
+$(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@ $(LDFLAGS)
 
-main_server.o: main_server.c message.h signature_utils.h
-	$(CC) -c main_server.c $(CFLAGS)
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
 
-signature_utils.o: signature_utils.c signature_utils.h
-	$(CC) -c signature_utils.c $(CFLAGS)
+$(EXECDIR):
+	mkdir -p $(EXECDIR)
 
 clean:
-	rm -f *.o multi_server client main main_server
+	rm -rf $(OBJDIR) $(EXECDIR)
 
