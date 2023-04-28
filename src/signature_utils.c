@@ -388,7 +388,7 @@ int get_pubkeys(const char *path, pubkey_list_t ** pubkeys, int *num_pubkeys)
     {
         if (get_pubkey_list(path, pubkeys, num_pubkeys) != 0)
         {
-            printf("Error getting file list\n");
+            fprintf(stderr, "Error getting file list\n");
             return ERR_GET_PUBKEYS_PATH_DIR_FAIL;
         }
     }

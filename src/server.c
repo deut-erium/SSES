@@ -179,8 +179,7 @@ void *handle_client(void *arg)
     {
         char status[] = "Failed to verify signature\n";
         send_data(sock, status, sizeof(status), 1);
-        fprintf(stderr,
-                "Connection: %d\tError: failed to verify the signature\n",
+        printf("Connection: %d\tError: failed to verify the signature\n",
                 sock);
         printf("Connection: %d\tClosed\n", sock);
         close(sock);
