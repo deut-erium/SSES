@@ -3,6 +3,10 @@ CFLAGS = -Wall -Wextra -pedantic
 SRCDIR = src
 OBJDIR = build
 EXECDIR = bin
+TESTDIR = tests
+TESTSRCDIR = $(TESTDIR)
+TESTOBJDIR = $(TESTDIR)/build
+TESTEXECDIR = $(TESTDIR)/bin
 LDFLAGS = -lcrypto
 
 CLIENT_SOURCES = $(SRCDIR)/client.c $(SRCDIR)/message.c
@@ -16,9 +20,13 @@ UTILS_OBJECTS = $(UTILS_SOURCES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 CLIENT_EXECUTABLE = $(EXECDIR)/client
 SERVER_EXECUTABLE = $(EXECDIR)/server
 
-.PHONY: all clean
+TEST_SOURCES = $(TESTSRCDIR)/tests.c $(TESTSRCDIR)/unity.c $(SRCDIR)/message.c
+TEST_OBJECTS = $(TEST_SOURCES:$(TESTSRCDIR)/%.c=$(TESTOBJDIR)/%.o)
+TEST_EXECUTABLE = $(TESTEXECDIR)/tests
 
-all: $(CLIENT_EXECUTABLE) $(SERVER_EXECUTABLE)
+.PHONY: all clean tests run_tests
+
+all: $(CLIENT_EXECUTABLE) $(SERVER_EXECUTABLE) $(TEST_EXECUTABLE)
 
 $(CLIENT_EXECUTABLE): $(CLIENT_OBJECTS) | $(EXECDIR)
 	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
@@ -29,12 +37,29 @@ $(SERVER_EXECUTABLE): $(SERVER_OBJECTS) $(UTILS_OBJECTS) | $(EXECDIR)
 $(OBJDIR)/%.o: $(SRCDIR)/%.c | $(OBJDIR)
 	$(CC) $(CFLAGS) -c $< -o $@ $(LDFLAGS)
 
+$(TESTOBJDIR)/%.o: $(TESTSRCDIR)/%.c | $(TESTOBJDIR)
+	$(CC) $(CFLAGS) -c $< -o $@ -I$(SRCDIR)
+
+$(TEST_EXECUTABLE): $(TEST_OBJECTS) $(UTILS_OBJECTS) | $(TESTEXECDIR)
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS) -pthread -I$(SRCDIR)
+
 $(OBJDIR):
 	mkdir -p $(OBJDIR)
 
 $(EXECDIR):
 	mkdir -p $(EXECDIR)
 
+$(TESTOBJDIR):
+	mkdir -p $(TESTOBJDIR)
+
+$(TESTEXECDIR):
+	mkdir -p $(TESTEXECDIR)
+
+.PHONY: all clean tests run_tests
+
+run_tests: $(TEST_EXECUTABLE)
+	$(TEST_EXECUTABLE) 2> /dev/null
+
 clean:
-	rm -rf $(OBJDIR) $(EXECDIR)
+	rm -rf $(OBJDIR) $(EXECDIR) $(TESTOBJDIR) $(TESTEXECDIR)
 

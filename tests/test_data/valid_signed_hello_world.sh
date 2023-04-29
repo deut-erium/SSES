@@ -1,0 +1,4 @@
+#dek+SjlGabwrzTG8ADbpRvjIcpjwUYstB6/eX3TxfrGkSFInLA1n3MwCzC9pONl5MCBX9oUMNC+hiuXLbQk4I8/29VdRei2Xw+NtnLQScdfvFcGFBkx+0EHnKFnb6Iy3+j0O0PToUtajCVYAEQAy/srBxZDDLhCsnufbmNtdQVCZfPKG/KLczbjJnwdzD1X8IsdQMavpPjIEujBLCP6/bRVWo6q2BtrXA+2KrD9eooMkMijXeCPQ3LAAsMxHf6LF2DOWxcCyN/Y6BXRtDzdW1RLyMlCcjt4Ddtco+DCE5NpXkdhYpXoM8DZoplFQguz1uNbWRcEjF5rY703FwWqg3g==
+#!/bin/bash
+
+echo "hello world"
