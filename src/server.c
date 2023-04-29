@@ -58,7 +58,7 @@ int main(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
 
-    if (listen(server_fd, 3) < 0)
+    if (listen(server_fd, 10) < 0)
     {
         perror("listen");
         exit(EXIT_FAILURE);
@@ -84,8 +84,8 @@ int main(int argc, char **argv)
                     (socklen_t *) & addrlen)) < 0)
         {
             perror("accept");
-            free_pubkey_list(pubkeys, num_pubkeys);
-            exit(EXIT_FAILURE);
+            sleep(1);           // avoid busy looping
+            continue;
         }
 
         printf("Connection: %d\tNew connection accepted.\n", new_socket);
@@ -94,15 +94,15 @@ int main(int argc, char **argv)
         if (pthread_create(&thread_id, NULL, handle_client, (void *)&args) < 0)
         {
             perror("could not create thread");
-            free_pubkey_list(pubkeys, num_pubkeys);
-            exit(EXIT_FAILURE);
+            close(new_socket);
+            continue;
         }
 
         if (pthread_detach(thread_id) < 0)
         {
             perror("could not detach thread");
-            free_pubkey_list(pubkeys, num_pubkeys);
-            exit(EXIT_FAILURE);
+            close(new_socket);
+            continue;
         }
     }
     free_pubkey_list(pubkeys, num_pubkeys);
@@ -124,18 +124,14 @@ void *handle_client(void *arg)
     if (signed_script_len == -1)
     {
         fprintf(stderr, "Connection: %d\tError: read failed\n", sock);
-        printf("Connection: %d\tClosed\n", sock);
-        close(sock);
-        pthread_exit(NULL);
+        goto exit;
     }
     else if (signed_script_len == -2)
     {
         fprintf(stderr,
                 "Connection: %d\tError: Bash script exceeds 1MB in size.\n",
                 sock);
-        printf("Connection: %d\tClosed\n", sock);
-        close(sock);
-        pthread_exit(NULL);
+        goto exit;
     }
 
     char *signature_buffer = NULL;
@@ -150,9 +146,7 @@ void *handle_client(void *arg)
         send_data(sock, status, sizeof(status), 1);
         fprintf(stderr, "Connection: %d\tError: signature extraction failed",
                 sock);
-        printf("Connection: %d\tClosed\n", sock);
-        close(sock);
-        pthread_exit(NULL);
+        goto exit;
     }
 
     int verified = 0;
@@ -180,21 +174,31 @@ void *handle_client(void *arg)
         char status[] = "Failed to verify signature\n";
         send_data(sock, status, sizeof(status), 1);
         printf("Connection: %d\tError: failed to verify the signature\n",
-                sock);
-        printf("Connection: %d\tClosed\n", sock);
-        close(sock);
-        pthread_exit(NULL);
+               sock);
+        goto exit;
     }
+
+    char temp_filename[] = "/tmp/temp_script_XXXXXX";
+    int temp_fd = mkstemp(temp_filename);
+
+    if (temp_fd == -1)
+    {
+        perror("Failed to create temporary file for script");
+        goto removetemp;
+    }
+    write(temp_fd, script, script_len);
+    close(temp_fd);
+
+    char command[1024];
+    snprintf(command, sizeof(command), "bash %s", temp_filename);
 
 
     // Execute the Bash script from buffer and capture the output
-    FILE *fp = popen(script, "r");
+    FILE *fp = popen(command, "r");
     if (fp == NULL)
     {
         perror("popen failed");
-        printf("Connection: %d\tClosed\n", sock);
-        close(sock);
-        pthread_exit(NULL);
+        goto removetemp;
     }
 
     memset(buffer, 0, sizeof(buffer));
@@ -205,17 +209,19 @@ void *handle_client(void *arg)
         if (send_data(sock, buffer, numread, 0) < 0)
         {
             perror("send failed");
-            fclose(fp);
-            printf("Connection: %d\tClosed\n", sock);
-            close(sock);
-            pthread_exit(NULL);
+            goto closefp;
         }
         memset(buffer, 0, sizeof(buffer));
     }
 
+  closefp:
     fclose(fp);
+
+  removetemp:
+    remove(temp_filename);
+
+  exit:
     printf("Connection: %d\tClosed\n", sock);
     close(sock);
-
     pthread_exit(NULL);
 }

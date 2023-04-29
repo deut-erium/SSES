@@ -21,7 +21,7 @@ void print_hex(const void *buffer, size_t size)
 void print_public_modulus(EVP_PKEY * pkey)
 {
     RSA *rsa = EVP_PKEY_get1_RSA(pkey);
-    if (!rsa)
+    if (rsa == NULL)
     {
         printf("Error: Unable to extract RSA key from public key\n");
         return;
@@ -49,7 +49,7 @@ int extract_public_key_from_crt(const char *crt_path, EVP_PKEY ** public_key)
 
     // Parse certificate
     x509 = PEM_read_bio_X509(bio, NULL, NULL, NULL);
-    if (!x509)
+    if (x509 == NULL)
     {
         fprintf(stderr, "Error parsing certificate: %s\n", crt_path);
         error = ERR_EXTRACT_PUBKEY_PARSE;
@@ -58,7 +58,7 @@ int extract_public_key_from_crt(const char *crt_path, EVP_PKEY ** public_key)
 
     // Extract public key from certificate
     *public_key = X509_get_pubkey(x509);
-    if (!*public_key)
+    if (*public_key == NULL)
     {
         fprintf(stderr, "Error extracting public key from certificate\n");
         error = ERR_EXTRACT_PUBKEY_PUBLICKEY;
@@ -82,8 +82,20 @@ int decode_signature(char *signature_base64,
     BIO *mem = NULL;
     size_t len;
 
+    if (signature_base64 == NULL)
+    {
+        fprintf(stderr, "Error: got NULL pointer for base64 signature buffer\n");
+        goto out;
+    }
+
+    if (decoded_signature == NULL)
+    {
+        fprintf(stderr, "Error: got NULL pointer for decoded_signature buffer \n");
+        goto out;
+    }
+
     b64 = BIO_new(BIO_f_base64());
-    if (!b64)
+    if (b64 == NULL)
     {
         fprintf(stderr, "Error: failed to create BIO\n");
         ret = ERR_DECODE_SIGN_BIO_NEW;
@@ -91,7 +103,7 @@ int decode_signature(char *signature_base64,
     }
 
     mem = BIO_new_mem_buf(signature_base64, base64_len);
-    if (!mem)
+    if (mem == NULL)
     {
         fprintf(stderr, "Error: failed to create memory buffer BIO\n");
         BIO_free_all(b64);
@@ -251,6 +263,11 @@ int extract_signature_inplace(char *buffer,
                               char **file_content_buffer,
                               size_t *signature_len, size_t *file_content_len)
 {
+    if (buffer == NULL)
+    {
+        fprintf(stderr, "Error: NULL buffer encountered to decode signature\n");
+        return ERR_EXTRACT_SIGN_INPLACE_B64DECODE_FAIL;
+    }
     /* file format 
      * #<base64encoded signature> 
      * #!/bin/bash 
@@ -305,6 +322,12 @@ int is_directory(const char *path)
 int get_pubkey_list(const char *directory, pubkey_list_t ** list,
                     int *list_len)
 {
+    if (directory == NULL)
+    {
+        fprintf(stderr,
+                "Error: NULL pointer encountered as directory argument\n");
+        return ERR_GET_PUBKEY_LIST_OPENDIR;
+    }
     DIR *dir;
     struct dirent *ent;
     pubkey_list_t *files;
@@ -400,6 +423,10 @@ int get_pubkeys(const char *path, pubkey_list_t ** pubkeys, int *num_pubkeys)
             *num_pubkeys = 1;
             (*pubkeys)[0].name = (char *)malloc(strlen(path) + 1);
             strcpy((*pubkeys)[0].name, path);
+        }
+        else
+        {
+            *num_pubkeys = 0;
         }
     }
 
