@@ -16,23 +16,31 @@ make
 
 This will generate the `bin` and `build` directories, compile the sources, and create the client and server executables inside the bin directory.
 
+### Tests
+To run tests run
+```bash
+make run_tests
+```
+
+
 ## Running the server
 After building the source, run the server in `bin/server`  
-It exepectes 1 argument for path of either
+It expects 1 argument for path of either
 1. An x509 certificate to verify the signatures with e.g
 ```bash
-./bin/server certificates/example.crt
+./bin/server examples/certificates/example_cert.crt
 ```
 2. Or path to a directory containing x509 signatures which server reads 
 non-recursively to verify the signatures e.g.  
 ```bash
-./bin/server certificates
+./bin/server examples/certificates
 ```
 
 ## Running the client
 To send a script locally to the server, run the client with the path to the signed script
+`Usage: ./bin/client <path> [port] [address]` (default port 8080 on localhost)  
 ```bash
-./bin/client example_signed_script.sh
+./bin/client examples/test_signed/count.sh.signed
 ```
 
 ## Communication Protocol
@@ -98,14 +106,23 @@ After signing
 
 ### Helper Scripts
 #### generate_cert.sh
+```bash
+Usage: ./generate_cert.sh <certificate_path> <privkey_path> <pubkey_path>
+```
 This script generates a self-signed SSL/TLS certificate and extracts the public key from it. It takes three arguments: the path for the output certificate file, the path for the output private key file, and the path for the output public key file. 
 
 
 #### verify_sign.sh
 A bash script that verifies the digital signature of a signed script file using a specified public key. The script takes two arguments: the path to the signed script file and the path to the public key file.
+```bash
+Usage: ./verify_sign.sh <signed_script> <public_key>
+```
 
 #### sign_script.sh
 This script takes three arguments: the path to a script file, the path to a private key file, and the path to an output file. The script signs the contents of the input script file using the private key and appends the signature to the beginning of the output file, prefixed with a "#" character. The script file itself is then appended to the output file. The resulting output file can be verified using the public key corresponding to the private key used for signing.
+```bash
+Usage: ./sign_script.sh <script_file> <private_key> <output_file>
+```
 
 ## Status code of execution
 ### Outputs of the server
@@ -137,18 +154,6 @@ Rest of the errror messages are directed to stderr
 - get_pubkeys() fails:
   - Status code: EXIT_FAILURE
   - Explanation: This indicates that there was an error in extracting public keys from the path given
-
-- accept() fails:
-  - Status code: EXIT_FAILURE
-  - Explanation: This indicates that there was an error in accepting an incoming connection.
-
-- pthread_create() fails:
-  - Status code: EXIT_FAILURE
-  - Explanation: This indicates that there was an error in creating a new thread to handle a client connection.
-
-- pthread_detach() fails:
-  - Status code: EXIT_FAILURE
-  - Explanation: This indicates that there was an error in detaching a thread.
 
 - Successful execution:
   - Status code: 0
