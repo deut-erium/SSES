@@ -1,0 +1,4 @@
+#jq0mXcuyNjmwtTXylLiNhnJK+bR9AoZ3bqg/dZxsdA0jTwHk/vBEa6Qh3Qum8I9XtJIiAcB4lZCNP2PkwQa8P2ias0x7Wy7whGyxYzObV8pz0/NC8P5SuzzbZZPByhXWaM410ztOkbfYQGTwxeFaJKGjO6csEWIEvzkE6YIf7raZX2QOMnTQEnxph+2pxu/A965AZSoYDJm28tEJACTmuOZrePXKhV2o1HxC8mKz6ean/JyPrfAYFo+xHaOaxGJGOSAf6TB5aYZIV/xSwX0bJt83s++s+pRtmExFi5AgJnVtPW1/TtSqzsK7zTlfk4AG/+a7q1jGwRLzQeOR4T1Jvw==
+#!/bin/bash
+echo $PATH
+

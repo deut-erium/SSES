@@ -1,0 +1,4 @@
+#fhNc/lzZqCQ1walXoLEGa9CYciQwxbH9kvD6qbyvgH6760fvU1hCQMKeo4zbFSBrAPptCaHcdDOhQ7IZ7FMlSQ6rd5rFu04iiRZOmAncnBNeSxPIUeoD0k9xBGNH1ySMTwZf5FVnMUXBtH6DA3JlIQWrQ8H/+TwsezZ/dMpSBzFzKrhxsqExn3b9TZ1GCKwz/iNCvs4fubQNT18Wt6KHLvRg3lAjEhBk03khwzIdCceNYueRjUlCayyuVkYIKX2Pr6fI5NI9tKD1uFx81k6hueKWmBqjLiRKUGFHpF5JKGw2/i9MVLnqg4z3BGRCIvuZCnkCWIJF09FoNICUXQxEzw==
+#!/bin/bash
+echo "The current date and time is: $(date)"
+

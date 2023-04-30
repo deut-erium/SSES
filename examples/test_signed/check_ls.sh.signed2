@@ -1,0 +1,9 @@
+#gJsKbd4W7P3QLtCita5mfINCKGmBD9MSYDhPqhYXLnCTaIuM9jfQ8XTaUXIeuACCgFIaXTphSVz7vHfAejX7FdgmL7UCp+i45+hF8NITXIsCvopjUmeP7Xd/zRig+XRi/VwYeYcFTI/X6HUW5jxD3voa4c75kN01HgeTMEKpUtHJu7DpOfdttQmeW31DDy6sIAWdzFd0mV4Tat6FVA4Sv85B80UT8UrG9Q05J7r2D0ZgglRKtkJadWmKx+y+FFW2OHR2OyI48SSEMXFhNNGfKeUiGKUXT3odOsYo+6UgupyFGhYALyj+TUP+fIZF2xEHiYN9DcX0YFFxPaJZLL6YCg==
+#!/bin/bash
+if command -v ls >/dev/null 2>&1
+then
+    echo "The ls command exists"
+else
+    echo "The ls command does not exist"
+fi
+

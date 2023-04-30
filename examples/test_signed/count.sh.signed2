@@ -1,0 +1,7 @@
+#rtGaA89d7Lwx4ZyhUhYS+RWR4U0yjQ0t74rMtqh7CCxhObM2ReEKVt9RLxBSpNw0SeZ9rHwzcub2nVhUG4SzVXMqYiYpDC5Nlrc5EMz5hlg8ZA7jQZLUtuS/wM7TiugMBzRhWjaE6nq/kK43ygbc0aigji4CW4+x2QDFGLaFS/t7nuyEHm8Ghe/sRgsmSL1TFXbuzskJE33e1CtLCi1ZmqHWYApKMH1kE6iCnnNlea+iwXWQeSVK0o/AHPkB4b7xh2pl1Mk0IwDuMEamZWjbZqzqJOrCy/YHT8pvYnZf0SUNXBL9j/niEb4z6hPM19fAQog891hKui9TJRB3o5lWjA==
+#!/bin/bash
+for i in {1..10}
+do
+    echo $i
+done
+

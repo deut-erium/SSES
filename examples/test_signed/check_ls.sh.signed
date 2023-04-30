@@ -1,0 +1,9 @@
+#OqOf6CAh0BJOLGfGpf0mJsFLruJnnUU6X850XUmUEBLXmfUx8Cm9F+6hYGU6lZv/e2t+PAKPfaR69H5Loz28oqdvViPNLNwiREfe8pktSCKgtsg8hCHhpW4K+f90UXSuxVWwSQaMwPuRGhXPTEtvPsfJdVWD3Sq6Sc5FjZ292P/YMiuzw8GDxzxQ8qQ0NxSf4/4LurKp/u5eeJ5G0gdL0EMk1zj8KbLwpCyGfMWfAmpZU4th3C95KUHeqcvv/xig9KnicntnQLVIVwYJwGfm6MjgD8I7zVJyT+28fY6kZWauC+VQ+Ys3KJ2ccjit3WkG/PnuauMBDr1XqDkoVMVzJx3mmah3H6GfpgQc2YqtW9O5sRBwNZvFx6MlMeRNavb99TFAOnioQA4rcRovqB+4iol8y2aPRmi7NMeRQEVvPFA4ngpAyxuTLI3KTj/y+BenbqqOLTOJ1v5UxftvW5PqGQm1I/zDs3bDgq5rp+bzPs0oZRyqrde9/bzZiOEGFpQ0wsWgkL4+zR08xHWU3DX9/JPUbn6VJiYzISzEyJE6i3FYF++vuqHfyjGIkWisWwpRTjlXjE/BiKsFrPBuv9eLy+hlcXtaMMiccl3bjaxp7lEYdQ7xHFwEFyGv70/DtwNA1g1D3KoVg7RAR7agFZqPRCQQn3mAS5P6PuS9rmYCPIc=
+#!/bin/bash
+if command -v ls >/dev/null 2>&1
+then
+    echo "The ls command exists"
+else
+    echo "The ls command does not exist"
+fi
+
