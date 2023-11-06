@@ -215,7 +215,7 @@ void *handle_client(void *arg)
     }
 
   closefp:
-    fclose(fp);
+    pclose(fp);
 
   removetemp:
     remove(temp_filename);

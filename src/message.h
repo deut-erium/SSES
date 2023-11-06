@@ -11,7 +11,7 @@
 
 struct message {
     char data[1022];
-    short size;
+    unsigned short size;
 };
 
 int send_data(int sockfd, const char * data, size_t datalen, int include_termination);
